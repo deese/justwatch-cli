@@ -1,14 +1,23 @@
 import sys
+import argparse
+
 from simplejustwatchapi.justwatch import search
 from rich import print
 from rich.table import Table
 from imdb import Cinemagoer
+
 USE_IMDB = True
+VERBOSE = False
 
 ia = Cinemagoer()
 
-def do_query(query):
-    results = search(query, "ES", "es", 5, True)
+def vprint(data):
+    if VERBOSE:
+        print(data)
+
+def do_query(query, use_imdb=False, lang="ES", country="es", limit=5, year=None):
+    vprint(f"Searching for \"{query}\"")
+    results = search(query, lang, country, limit, True)
     if not results:
         print("No results found")
         return
@@ -20,23 +29,49 @@ def do_query(query):
     table.add_column("score", style="red")
     table.add_column("offers", style="blue")
 
-    for result in results:
+    for c, result in enumerate(results):
+        vprint(f"Parsing result {c}")
+        if result.release_year and year and result.release_year not in range(year-5, year+5):
+            vprint(f"Skipping [b]\"{result.title}\" ({result.release_year})[/b] because it's not in the year range.")
+            continue
+        #breakpoint()
         offers= []
+        #print(json.dumps(result, indent=4))
         for i in result.offers:
             if i.monetization_type.lower() == "flatrate":
                 offers.append(f"{i.package.name}")
         score = "N/A"
-        if USE_IMDB:
-            score_q = ia.get_movie(result.imdb_id[2:])
-            if score_q:
-                score = score_q['rating']
+        if use_imdb and result.imdb_id:
+            try:
+                score_q = ia.get_movie(result.imdb_id[2:])
+                if score_q:
+                    score = score_q['rating']
+            except Expception as e:
+                vprint(f"Error getting IMDB score: {e}")
+
         table.add_row(result.title, str(result.entry_id), str(result.release_year), str(score), ", ".join(offers))
 
-    if table:
+    if table.row_count:
         print(table)
+    else:
+        print("No results found")
 
-if len(sys.argv) >= 2:
-    do_query(sys.argv[1])
+
+parser = argparse.ArgumentParser(description="JustWatch CLI")
+parser.add_argument("query", type=str, help="Search query")
+parser.add_argument("--imdb", action="store_true", help="Use IMDB to get ratings")
+parser.add_argument("--lang", type=str, default="ES", help="Language")
+parser.add_argument("--country", type=str, default="es", help="Country")
+parser.add_argument("--limit", type=int, default=5, help="Limit results")
+parser.add_argument("--year", type=int, help="Year")
+parser.add_argument("--verbose", action="store_true", help="Verbose output")
+
+args = parser.parse_args()
+
+VERBOSE = args.verbose
+
+if args.query:
+    do_query(args.query, use_imdb=args.imdb, lang=args.lang, country=args.country, limit=args.limit, year=args.year)
     sys.exit()
 
 while True:
@@ -44,4 +79,5 @@ while True:
 
     if query.lower() == "exit":
         break
-    do_query(query)
+    do_query(query, use_imdb=args.imdb, lang=args.lang, country=args.country, limit=args.limit, year=args.year)
+
