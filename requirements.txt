@@ -1,0 +1,3 @@
+simplejustwatchapi
+git+https://github.com/cinemagoer/cinemagoer
+rich
