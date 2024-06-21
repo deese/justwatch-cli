@@ -28,7 +28,7 @@ def colorize_services(offers):
     return ", ".join(ret)
 
 
-def do_query(query, use_imdb=False, lang="ES", country="es", limit=5, year=None):
+def do_query(query, use_imdb=False, lang="ES", country="es", limit=5, year=None, renting=False):
     vprint(f"Searching for \"{query}\"")
     results = search(query, lang, country, limit, True)
     if not results:
@@ -37,22 +37,35 @@ def do_query(query, use_imdb=False, lang="ES", country="es", limit=5, year=None)
 
     table = Table(title="Results")
     table.add_column("Title", style="cyan")
-    table.add_column("ID", style="magenta")
+
+    ## It is done like that because rich tables cannot be sorted or columns move
+    if VERBOSE:
+        table.add_column("ID", style="magenta")
+
     table.add_column("released", style="green")
-    table.add_column("score", style="red")
-    table.add_column("offers", style="grey66")
+
+    if use_imdb:
+        table.add_column("score", style="red")
+
+    table.add_column("streaming", style="grey66")
+
+    if renting:
+        table.add_column("renting", style="grey66")
 
     for c, result in enumerate(results):
         vprint(f"Parsing result {c}")
         if result.release_year and year and result.release_year not in range(year-5, year+5):
             vprint(f"Skipping [b]\"{result.title}\" ({result.release_year})[/b] because it's not in the year range.")
             continue
-        #breakpoint()
         offers= []
+        rent = []
         #print(json.dumps(result, indent=4))
+
         for i in result.offers:
             if i.monetization_type.lower() == "flatrate":
                 offers.append(f"{i.package.name}")
+            if i.monetization_type.lower() == "rent":
+                rent.append(f"{i.package.name}")
         score = "N/A"
         if use_imdb and result.imdb_id:
             try:
@@ -61,8 +74,11 @@ def do_query(query, use_imdb=False, lang="ES", country="es", limit=5, year=None)
                     score = score_q['rating']
             except Expception as e:
                 vprint(f"Error getting IMDB score: {e}")
+                score = "Error"
 
-        table.add_row(result.title, str(result.entry_id), str(result.release_year), str(score), colorize_services(offers))
+        items = [result.title, str(result.entry_id) if VERBOSE else None, str(result.release_year), str(score) if use_imdb else None, colorize_services(offers) if offers else "Not available for streaming", (colorize_services(rent) if rent else "Not available for rent") if renting else None]
+
+        table.add_row(*[i for i in items if i is not None])
 
     if table.row_count:
         print(table)
@@ -77,6 +93,7 @@ parser.add_argument("--lang", type=str, default="ES", help="Language to use. Def
 parser.add_argument("--country", type=str, default="es", help="Country to use. Defaults to 'ES'. ")
 parser.add_argument("--limit", type=int, default=5, help="Limit results to this number")
 parser.add_argument("--year", type=int, help="Year when you think it was release. It will automatically add +5 and -5 years to the number.")
+parser.add_argument("--rent", action="store_true", help="Show also renting options")
 parser.add_argument("--verbose", action="store_true", help="Verbose output")
 
 args = parser.parse_args()
@@ -84,7 +101,7 @@ args = parser.parse_args()
 VERBOSE = args.verbose
 
 if args.query:
-    do_query(args.query, use_imdb=args.imdb, lang=args.lang, country=args.country, limit=args.limit, year=args.year)
+    do_query(args.query, use_imdb=args.imdb, lang=args.lang, country=args.country, limit=args.limit, year=args.year, renting=args.rent)
     sys.exit()
 
 while True:
@@ -92,5 +109,5 @@ while True:
 
     if query.lower() == "exit":
         break
-    do_query(query, use_imdb=args.imdb, lang=args.lang, country=args.country, limit=args.limit, year=args.year)
+    do_query(query, use_imdb=args.imdb, lang=args.lang, country=args.country, limit=args.limit, year=args.year, renting=args.rent)
 
