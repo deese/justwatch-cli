@@ -1,3 +1,5 @@
+""" Setuptools configuration for the project. """
+
 import os.path
 
 from setuptools import find_packages, setup
@@ -11,7 +13,7 @@ def source_root_dir():
 def read_long_description():
     """Read from the README file in root of source directory."""
     readme = os.path.join(source_root_dir(), "README.md")
-    with open(readme) as fin:
+    with open(readme, encoding="utf-8") as fin:
         return fin.read()
 
 setup(
