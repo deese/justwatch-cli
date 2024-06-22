@@ -20,7 +20,7 @@ setup(
     long_description=read_long_description(),
     long_description_content_type="text/markdown",
     url="https://github.com/deese/justwatch-cli",
-    author="Javi DeeSe",
+    author="Javier DeeSe",
     author_email="deese2k@gmail.com",
     classifiers=[
         "Development Status :: 3 - Alpha",

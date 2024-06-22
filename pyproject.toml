@@ -7,14 +7,14 @@ build-backend = "setuptools.build_meta"
 name = "justwatch-cli"
 version = "0.0.1"
 authors = [
-  { name="Javier", email="deese2k@gmail.com" },
+  { name="Javier DeeSe", email="deese2k@gmail.com" },
 ]
 description = "This is just a silly app to query justwatch and get some where the show/movie is available and the score in imdb if available. All the power relies on the libraries used simplejustwatchapi, rich and cinemagoer. All the real credits to the developers of those libs"
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apachw 2.0 License",
     "Operating System :: OS Independent",
 ]
 dependencies=["rich", "simple-justwatch-python-api", "cinemagoer"]
