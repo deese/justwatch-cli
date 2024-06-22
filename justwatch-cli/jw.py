@@ -1,47 +1,61 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
+""" JustWatch CLI """
 import sys
 import argparse
+from typing import NamedTuple
 
 from simplejustwatchapi.justwatch import search
-from rich import print
+from rich import print as r_print
 from rich.table import Table
 from imdb import Cinemagoer
 
-USE_IMDB = True
 VERBOSE = False
 
 # Edit this to add the services you have available
 AVAILABLE_SERVICES = ["netflix", "max",
                       "amazon prime video", "filmin", "movistar plus"]
 
+DEFAULTS = {
+    "lang": "ES",
+    "country": "es",
+    "limit": 5
+}
+
 ia = Cinemagoer()
 
+class Config(NamedTuple):
+    """ Configuration for the app """
+    use_imdb: bool
+    lang: str
+    country: str
+    limit: int
+    year: int
+    renting: bool
+
+    @property
+    def year_range(self):
+        """ Return the year range """
+        return range(self.year - 5, self.year + 5)
 
 def vprint(data):
+    """ Print if Verbose is enabled """
     if VERBOSE:
-        print(data)
+        r_print(data)
 
 
 def colorize_services(offers):
+    """ Colorize the services available to the user  """
     ret = []
     for offer in offers:
-        if any([offer.lower() == i.lower() for i in AVAILABLE_SERVICES]):
+        if any(offer.lower() == i.lower() for i in AVAILABLE_SERVICES):
             ret.append(f"[bright_green]{offer}[/bright_green]")
         else:
             ret.append(f"{offer}")
     return ", ".join(ret)
 
-
-def do_query(query, use_imdb=False, lang="ES", country="es",
-             limit=5, year=None, renting=False):
-    vprint(f"Searching for \"{query}\"")
-    results = search(query, lang, country, limit, True)
-    if not results:
-        print("No results found")
-        return
-
+def build_table(use_imdb, renting):
+    """ Build the table """
     table = Table(title="Results")
     table.add_column("Title", style="cyan")
 
@@ -59,10 +73,25 @@ def do_query(query, use_imdb=False, lang="ES", country="es",
     if renting:
         table.add_column("renting", style="grey66")
 
-    for c, result in enumerate(results):
-        vprint(f"Parsing result {c}")
-        if result.release_year and year and result.release_year not in range(year-5, year+5):
-            vprint(f"Skipping [b]\"{result.title}\" ({result.release_year})[/b] because it's not in the year range.")
+    return table
+
+def do_query(query, config):
+    """ Execute the query to JW """
+
+    vprint(f"Searching for \"{query}\"")
+    results = search(query, config.lang, config.country, config.limit, True)
+
+    if not results:
+        print("No results found")
+        return
+
+    table = build_table(config.use_imdb, config.renting)
+
+    for cnt, result in enumerate(results):
+        vprint(f"Parsing result {cnt}")
+        if result.release_year and config.year and result.release_year not in config.year_range:
+            vprint(f"Skipping [b]\"{result.title}\""
+                   "({result.release_year})[/b] because it's not in the year range.")
             continue
         offers = []
         rent = []
@@ -72,30 +101,31 @@ def do_query(query, use_imdb=False, lang="ES", country="es",
                 offers.append(f"{i.package.name}")
             if i.monetization_type.lower() == "rent":
                 rent.append(f"{i.package.name}")
+
         score = "N/A"
-        if use_imdb and result.imdb_id:
+        if config.use_imdb and result.imdb_id:
             try:
                 score_q = ia.get_movie(result.imdb_id[2:])
                 if score_q:
                     score = score_q['rating']
-            except Exception as e:
-                vprint(f"Error getting IMDB score: {e}")
+            except Exception as ex: #pylint: disable=broad-except
+                vprint(f"Error getting IMDB score: {ex}")
                 score = "Error"
 
         items = [result.title, str(result.entry_id) if VERBOSE else None,
-                 str(result.release_year), str(score) if use_imdb else None,
+                 str(result.release_year), str(score) if config.use_imdb else None,
                  colorize_services(offers) if offers
                  else "Not available for streaming",
                  (colorize_services(rent) if rent
                   else "Not available for rent")
-                 if renting else None]
+                 if config.renting else None]
 
         table.add_row(*[i for i in items if i is not None])
 
     if table.row_count:
-        print(table)
+        r_print(table)
     else:
-        print("No results found")
+        r_print("No results found")
 
 
 if __name__ == "__main__":
@@ -104,13 +134,14 @@ if __name__ == "__main__":
                         help="Search query")
     parser.add_argument("--imdb", action="store_true",
                         help="Use IMDB to get ratings")
-    parser.add_argument("--lang", type=str, default="ES",
-                        help="Language to use. Defaults to 'es'")
-    parser.add_argument("--country", type=str, default="es",
-                        help="Country to use. Defaults to 'ES'. ")
-    parser.add_argument("--limit", type=int, default=5,
+    parser.add_argument("--lang", type=str, default=DEFAULTS["lang"],
+                        help=f"Language to use. Defaults to '{DEFAULTS['lang']}'")
+    parser.add_argument("--country", type=str, default=DEFAULTS["country"],
+                        help=f"Country to use. Defaults to '{DEFAULTS['country']}'. ")
+    parser.add_argument("--limit", type=int, default=DEFAULTS["limit"],
                         help="Limit results to this number")
-    parser.add_argument("--year", type=int, help="Year when you think it was "
+    parser.add_argument("--year", type=int, default=0,
+                        help="Year when you think it was "
                         "release. It will automatically add +5 and -5 years "
                         "to the number.")
     parser.add_argument("--rent", action="store_true",
@@ -123,20 +154,18 @@ if __name__ == "__main__":
     VERBOSE = args.verbose
 
     if args.query:
-        do_query(args.query, use_imdb=args.imdb, lang=args.lang,
-                 country=args.country, limit=args.limit, year=args.year,
-                 renting=args.rent)
+        do_query(args.query, config=Config(args.imdb, args.lang,
+                 args.country, args.limit, args.year, args.rent))
         sys.exit()
 
     try:
         while True:
-            query = input("Enter a search query: ")
+            in_query = input("Enter a search query: ")
 
-            if query.lower() == "exit":
+            if in_query.lower() == "exit":
                 break
-            do_query(query, use_imdb=args.imdb, lang=args.lang,
-                     country=args.country, limit=args.limit,
-                     year=args.year, renting=args.rent)
+            do_query(in_query, config=Config(args.imdb, args.lang,
+                 args.country, args.limit, args.year, args.rent))
     except KeyboardInterrupt:
-        print("Exiting...")
+        r_print("Exiting...")
         sys.exit()
