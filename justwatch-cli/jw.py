@@ -13,13 +13,16 @@ USE_IMDB = True
 VERBOSE = False
 
 # Edit this to add the services you have available
-AVAILABLE_SERVICES = [ "netflix", "max", "amazon prime video", "filmin", "movistar plus" ]
+AVAILABLE_SERVICES = ["netflix", "max",
+                      "amazon prime video", "filmin", "movistar plus"]
 
 ia = Cinemagoer()
+
 
 def vprint(data):
     if VERBOSE:
         print(data)
+
 
 def colorize_services(offers):
     ret = []
@@ -31,7 +34,8 @@ def colorize_services(offers):
     return ", ".join(ret)
 
 
-def do_query(query, use_imdb=False, lang="ES", country="es", limit=5, year=None, renting=False):
+def do_query(query, use_imdb=False, lang="ES", country="es",
+             limit=5, year=None, renting=False):
     vprint(f"Searching for \"{query}\"")
     results = search(query, lang, country, limit, True)
     if not results:
@@ -41,7 +45,7 @@ def do_query(query, use_imdb=False, lang="ES", country="es", limit=5, year=None,
     table = Table(title="Results")
     table.add_column("Title", style="cyan")
 
-    ## It is done like that because rich tables cannot be sorted or columns move
+    # It is done like that because rich tables cannot be sorted or columns move
     if VERBOSE:
         table.add_column("ID", style="magenta")
 
@@ -60,9 +64,8 @@ def do_query(query, use_imdb=False, lang="ES", country="es", limit=5, year=None,
         if result.release_year and year and result.release_year not in range(year-5, year+5):
             vprint(f"Skipping [b]\"{result.title}\" ({result.release_year})[/b] because it's not in the year range.")
             continue
-        offers= []
+        offers = []
         rent = []
-        #print(json.dumps(result, indent=4))
 
         for i in result.offers:
             if i.monetization_type.lower() == "flatrate":
@@ -75,11 +78,17 @@ def do_query(query, use_imdb=False, lang="ES", country="es", limit=5, year=None,
                 score_q = ia.get_movie(result.imdb_id[2:])
                 if score_q:
                     score = score_q['rating']
-            except Expception as e:
+            except Exception as e:
                 vprint(f"Error getting IMDB score: {e}")
                 score = "Error"
 
-        items = [result.title, str(result.entry_id) if VERBOSE else None, str(result.release_year), str(score) if use_imdb else None, colorize_services(offers) if offers else "Not available for streaming", (colorize_services(rent) if rent else "Not available for rent") if renting else None]
+        items = [result.title, str(result.entry_id) if VERBOSE else None,
+                 str(result.release_year), str(score) if use_imdb else None,
+                 colorize_services(offers) if offers
+                 else "Not available for streaming",
+                 (colorize_services(rent) if rent
+                  else "Not available for rent")
+                 if renting else None]
 
         table.add_row(*[i for i in items if i is not None])
 
@@ -88,23 +97,35 @@ def do_query(query, use_imdb=False, lang="ES", country="es", limit=5, year=None,
     else:
         print("No results found")
 
-def main():
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="JustWatch CLI")
-    parser.add_argument("query", nargs='?', type=str, help="Search query")
-    parser.add_argument("--imdb", action="store_true", help="Use IMDB to get ratings")
-    parser.add_argument("--lang", type=str, default="ES", help="Language to use. Defaults to 'es'")
-    parser.add_argument("--country", type=str, default="es", help="Country to use. Defaults to 'ES'. ")
-    parser.add_argument("--limit", type=int, default=5, help="Limit results to this number")
-    parser.add_argument("--year", type=int, help="Year when you think it was release. It will automatically add +5 and -5 years to the number.")
-    parser.add_argument("--rent", action="store_true", help="Show also renting options")
-    parser.add_argument("--verbose", action="store_true", help="Verbose output")
+    parser.add_argument("query", nargs='?', type=str,
+                        help="Search query")
+    parser.add_argument("--imdb", action="store_true",
+                        help="Use IMDB to get ratings")
+    parser.add_argument("--lang", type=str, default="ES",
+                        help="Language to use. Defaults to 'es'")
+    parser.add_argument("--country", type=str, default="es",
+                        help="Country to use. Defaults to 'ES'. ")
+    parser.add_argument("--limit", type=int, default=5,
+                        help="Limit results to this number")
+    parser.add_argument("--year", type=int, help="Year when you think it was "
+                        "release. It will automatically add +5 and -5 years "
+                        "to the number.")
+    parser.add_argument("--rent", action="store_true",
+                        help="Show also renting options")
+    parser.add_argument("--verbose", action="store_true",
+                        help="Verbose output")
 
     args = parser.parse_args()
 
     VERBOSE = args.verbose
 
     if args.query:
-        do_query(args.query, use_imdb=args.imdb, lang=args.lang, country=args.country, limit=args.limit, year=args.year, renting=args.rent)
+        do_query(args.query, use_imdb=args.imdb, lang=args.lang,
+                 country=args.country, limit=args.limit, year=args.year,
+                 renting=args.rent)
         sys.exit()
 
     try:
@@ -113,11 +134,9 @@ def main():
 
             if query.lower() == "exit":
                 break
-            do_query(query, use_imdb=args.imdb, lang=args.lang, country=args.country, limit=args.limit, year=args.year, renting=args.rent)
+            do_query(query, use_imdb=args.imdb, lang=args.lang,
+                     country=args.country, limit=args.limit,
+                     year=args.year, renting=args.rent)
     except KeyboardInterrupt:
         print("Exiting...")
         sys.exit()
-
-if __name__ == "__main__":
-    main()
-

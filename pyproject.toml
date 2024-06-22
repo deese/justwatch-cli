@@ -22,3 +22,6 @@ dependencies=["rich", "simple-justwatch-python-api", "cinemagoer"]
 [project.urls]
 Homepage = "https://github.com/deese/justwatch-cli"
 Issues = "https://github.com/deese/justwatch-cli/issues"
+
+[flake8]
+ignore = [ 'E501']
