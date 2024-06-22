@@ -3,9 +3,16 @@
 This is just a silly app to query justwatch and get some where the show/movie is available and the score in imdb if available.
 All the power relies on the libraries used simplejustwatchapi, rich and cinemagoer. All the real credits to the developers of those libs 😃
 
+## Installation 
+You can install the package directly with pip using
+
+```pip install git+https://github.com/deese/justwatch-cli```
+
 ## Install requirements
 
-Run ```pip install -r requirements.txt```
+For manual install, remember to install the requirements by running
+
+```pip install -r requirements.txt``` 
 
 ## Usage
 
