@@ -1,3 +1,6 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
 import sys
 import argparse
 
@@ -85,29 +88,36 @@ def do_query(query, use_imdb=False, lang="ES", country="es", limit=5, year=None,
     else:
         print("No results found")
 
+def main():
+    parser = argparse.ArgumentParser(description="JustWatch CLI")
+    parser.add_argument("query", nargs='?', type=str, help="Search query")
+    parser.add_argument("--imdb", action="store_true", help="Use IMDB to get ratings")
+    parser.add_argument("--lang", type=str, default="ES", help="Language to use. Defaults to 'es'")
+    parser.add_argument("--country", type=str, default="es", help="Country to use. Defaults to 'ES'. ")
+    parser.add_argument("--limit", type=int, default=5, help="Limit results to this number")
+    parser.add_argument("--year", type=int, help="Year when you think it was release. It will automatically add +5 and -5 years to the number.")
+    parser.add_argument("--rent", action="store_true", help="Show also renting options")
+    parser.add_argument("--verbose", action="store_true", help="Verbose output")
 
-parser = argparse.ArgumentParser(description="JustWatch CLI")
-parser.add_argument("query", type=str, help="Search query")
-parser.add_argument("--imdb", action="store_true", help="Use IMDB to get ratings")
-parser.add_argument("--lang", type=str, default="ES", help="Language to use. Defaults to 'es'")
-parser.add_argument("--country", type=str, default="es", help="Country to use. Defaults to 'ES'. ")
-parser.add_argument("--limit", type=int, default=5, help="Limit results to this number")
-parser.add_argument("--year", type=int, help="Year when you think it was release. It will automatically add +5 and -5 years to the number.")
-parser.add_argument("--rent", action="store_true", help="Show also renting options")
-parser.add_argument("--verbose", action="store_true", help="Verbose output")
+    args = parser.parse_args()
 
-args = parser.parse_args()
+    VERBOSE = args.verbose
 
-VERBOSE = args.verbose
+    if args.query:
+        do_query(args.query, use_imdb=args.imdb, lang=args.lang, country=args.country, limit=args.limit, year=args.year, renting=args.rent)
+        sys.exit()
 
-if args.query:
-    do_query(args.query, use_imdb=args.imdb, lang=args.lang, country=args.country, limit=args.limit, year=args.year, renting=args.rent)
-    sys.exit()
+    try:
+        while True:
+            query = input("Enter a search query: ")
 
-while True:
-    query = input("Enter a search query: ")
+            if query.lower() == "exit":
+                break
+            do_query(query, use_imdb=args.imdb, lang=args.lang, country=args.country, limit=args.limit, year=args.year, renting=args.rent)
+    except KeyboardInterrupt:
+        print("Exiting...")
+        sys.exit()
 
-    if query.lower() == "exit":
-        break
-    do_query(query, use_imdb=args.imdb, lang=args.lang, country=args.country, limit=args.limit, year=args.year, renting=args.rent)
+if __name__ == "__main__":
+    main()
 
