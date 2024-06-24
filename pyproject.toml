@@ -5,7 +5,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "justwatch-cli"
-version = "0.0.1"
 authors = [
   { name="Javier DeeSe", email="deese2k@gmail.com" },
 ]
@@ -18,6 +17,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies=["rich", "simple-justwatch-python-api", "cinemagoer"]
+dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://github.com/deese/justwatch-cli"
@@ -25,3 +25,6 @@ Issues = "https://github.com/deese/justwatch-cli/issues"
 
 [flake8]
 ignore = [ 'E501']
+
+[tool.setuptools.dynamic]
+version = {attr = "justwatch_cli.__version__"}

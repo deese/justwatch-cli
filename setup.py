@@ -41,5 +41,5 @@ setup(
         "simple-justwatch-python-api",
         "cinemagoer"
     ],
-    scripts=['justwatch-cli/jw.py'],
+    scripts=['justwatch_cli/jw.py'],
 )
